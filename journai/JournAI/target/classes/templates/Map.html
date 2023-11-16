@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang='en' xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset='utf-8' />
+    <title>Getting started with the Mapbox Directions API</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css' rel='stylesheet' />
+    <link rel="stylesheet" type="text/css" href="static/MapStyling.css" />
+    <link href="styles.css" rel="stylesheet">
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+      #instructions {
+  position: absolute;
+  margin: 20px;
+  width: 15%;
+  top: 0;
+  bottom: 20%;
+  padding: 20px;
+  background-color: #fff;
+  overflow-y: scroll;
+  font-family: sans-serif;
+}
+    </style>
+</head>
+<body>
+<div id='map'></div>
+<div id='instructions'>
+    <!-- From here down is where the data is transfered to the database -->
+    <form th:action="@{/save}" method="post">
+        <label>Start: <input type="text" name="start"></label><br>
+        <label>Destination: <input type="text" name="destination"></label><br>
+        <!-- Check boxes -->
+        <label>
+            <input type="text" id="museum" name="option1" placeholder="What are you feeling today?">
+        </label><br>
+
+        <!-- Slider -->
+        <input type="range" id="range-slider" min="1" max="100" name="range"/>
+        <span id="slider-value" ></span> km
+
+        <script th:inline="javascript">
+            // Get the range slider element
+            const slider = document.getElementById("range-slider");
+
+            // Get the element to display the current value
+                const valueDisplay = document.getElementById("slider-value");
+
+            // Set the initial value display
+            valueDisplay.textContent = slider.value;
+
+            // Add an event listener for the slider input event
+                slider.addEventListener("input", () => {
+                // Update the value display with the current slider value
+                valueDisplay.textContent = slider.value;
+            });
+        </script>
+        <!-- Search button -->
+        <button type="submit">Generate Map</button>
+
+    </form>
+    <script type="text/javascript">
+   var geocoder;
+
+   function Geocode() {
+      var address = /*[[${address}]]*/; // Thymeleaf expression to access the address variable
+      geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ 'address': address }, function (results, status) {
+         if (status == google.maps.GeocoderStatus.OK) {
+            console.log("Latitude: " + results[0].geometry.location.lat());
+            console.log("Longitude: " + results[0].geometry.location.lng());
+         } else {
+            console.log("Geocoding failed: " + status);
+         }
+      });
+   }
+     // Function to trigger Geocode when the button is clicked
+     function onGeocodeButtonClick() {
+      Geocode();
+        }
+    </script>
+
+</div>
+<script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiamVzc2ljYWhvZXkiLCJhIjoiY2xvcGt6ODYzMGJvazJxbzZzMW9qMmppaiJ9.nmUH756QkkjG05Wk9CzN6A';
+const map = new mapboxgl.Map({
+  container: 'map',
+  style: 'mapbox://styles/mapbox/streets-v12',
+  center: [-7.900717096503491, 53.416140937630736], // starting position
+  zoom: 5
+});
+
+<div id="instructions" >
+
+    <form th:action="@{/save}" method="post">
+        <label>Start: <input type="text" name="start"></label><br>
+        <label>Destination: <input type="text" name="destination"></label><br>
+        <!-- Check boxes -->
+        <label>
+            <input type="text" id="museum" name="option1" placeholder="What are you feeling today?">
+        </label><br>
+        <!-- Slider -->
+        <input type="range" id="range-slider" min="1" max="100" name="range"/>
+        <span id="slider-value" ></span> km
+
+        <script th:inline="javascript">
+            // Get the range slider element
+            const slider = document.getElementById("range-slider");
+
+            // Get the element to display the current value
+                const valueDisplay = document.getElementById("slider-value");
+
+            // Set the initial value display
+            valueDisplay.textContent = slider.value;
+
+            // Add an event listener for the slider input event
+                slider.addEventListener("input", () => {
+                // Update the value display with the current slider value
+                valueDisplay.textContent = slider.value;
+            });
+        </script>
+        <!-- Search button -->
+        <button type="submit">Generate Map</button>
+    </form>
+</div>
+
+<script th:inline="javascript">
+    mapboxgl.accessToken = 'pk.eyJ1IjoiamVzc2ljYWhvZXkiLCJhIjoiY2xvcGt6ODYzMGJvazJxbzZzMW9qMmppaiJ9.nmUH756QkkjG05Wk9CzN6A';
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [-7.900717096503491, 53.416140937630736], // starting position
+        zoom: 12
+    });
+
+
+    const start = /*[[${locations.start}]]*/;
+    const middle = /*[[${locations.option}]]*/;
+    const end = /*[[${locations.end}]]*/;
+
+
+    // Create a function to make a directions request
+    async function getRoute(coordinates) {
+        // Make a directions request using driving profile
+        const query = await fetch(
+            `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates.join(';')}?steps=true&geometries=geojson&access_token=${mapboxgl.accessToken}`,
+            { method: 'GET' }
+        );
+        const json = await query.json();
+        const data = json.routes[0];
+        const route = data.geometry.coordinates;
+        const geojson = {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+                type: 'LineString',
+                coordinates: route
+            }
+        };
+
+        // If the route already exists on the map, reset it using setData
+        if (map.getSource('route')) {
+            map.getSource('route').setData(geojson);
+        } else {
+            // Otherwise, make a new request
+            map.addLayer({
+                id: 'route',
+                type: 'line',
+                source: {
+                    type: 'geojson',
+                    data: geojson
+                },
+                layout: {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                paint: {
+                    'line-color': '#3887be',
+                    'line-width': 5,
+                    'line-opacity': 0.75
+                }
+            });
+        }
+    }
+
+    map.on('load', () => {
+        // Make an initial directions request for the entire route
+        getRoute([start, middle, end]);
+
+        // Add starting, middle, and ending points to the map
+         map.addLayer({
+    id: 'point',
+    type: 'circle',
+    source: {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'Point',
+              coordinates: start
+            }
+          }
+        ]
+      }
+    },
+    paint: {
+      'circle-radius': 10,
+      'circle-color': '#3887be'
+    }
+        });
+
+        map.addLayer({
+            id: 'middle',
+            type: 'circle',
+            source: {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: [
+                        {
+                            type: 'Feature',
+                            properties: {},
+                            geometry: {
+                                type: 'Point',
+                                coordinates: middle
+                            }
+                        }
+                    ]
+                }
+            },
+            paint: {
+                'circle-radius': 100,
+                'circle-color': '#ff5733'
+            }
+        });
+
+        map.addLayer({
+            id: 'end',
+            type: 'circle',
+            source: {
+                type: 'geojson',
+                data: {
+                    type: 'FeatureCollection',
+                    features: [
+                        {
+                            type: 'Feature',
+                            properties: {},
+                            geometry: {
+                                type: 'Point',
+                                coordinates: end
+                            }
+                        }
+                    ]
+                }
+            },
+            paint: {
+                'circle-radius': 10,
+                'circle-color': '#f30'
+            }
+        });
+    });
+</script>
+</body>
+</html>
