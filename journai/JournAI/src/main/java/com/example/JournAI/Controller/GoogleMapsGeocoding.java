@@ -20,7 +20,7 @@ public class GoogleMapsGeocoding {
     public static String googleMaps(String address) throws ApiException {
         try {
             GeoApiContext context = new GeoApiContext.Builder()
-                    .apiKey("AIzaSyDXPPCaumqOsN8cOnn940Or0Y_WkGRzR54")
+                    .apiKey("")
                     .build();
             GeocodingResult[] results = GeocodingApi.geocode(context, address).await();
             context.shutdown();
