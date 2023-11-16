@@ -15,7 +15,7 @@ public class GPT {
     // This  is generating a response from the chatgpt api. Prompt is the prompt we are giving it.
 
     public String usePrompt(String prompt) throws ThymeleafException {
-        OpenAiService service = new OpenAiService("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");
+        OpenAiService service = new OpenAiService("");
         int maxTokens = 500;
         CompletionRequest completionRequest = CompletionRequest.builder()
                 .prompt(prompt)
