@@ -24,7 +24,7 @@
 <body>
 <div id='map'></div>
 <script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoiamVzc2ljYWhvZXkiLCJhIjoiY2xub2R1cnFnMGRrZjJrbW5pOW1hbDY5OSJ9.2NtYDnK_lpCUtIQbkCInHg';
+    mapboxgl.accessToken = '';
 const map = new mapboxgl.Map({
   container: 'map',
   style: 'mapbox://styles/mapbox/streets-v12',
